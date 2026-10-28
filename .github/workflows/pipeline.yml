@@ -1,0 +1,41 @@
+name: CI Pipeline Docker
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Copiar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar o Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir a Imagem Docker (Build)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: atividade-docker:latest
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Copiar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Construir imagem para teste
+        run: docker build -t minha-imagem-teste .
+
+      - name: Rodar container e testar se está respondendo (Teste)
+        run: |
+          docker run -d -p 8080:80 --name container-teste minha-imagem-teste
+          sleep 3
+          # Testa se o Nginx está retornando HTTP 200 na porta 8080
+          curl --fail http://localhost:8080 || exit 1
